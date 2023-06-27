@@ -2,12 +2,18 @@ import ProdutoService from "core/applications/services/produtoService";
 import { ImagemProduto } from "core/domain/produto";
 import { Request, Response } from "express";
 
+import { AdicionaImagensError } from "./errors/produtoControllerErrors";
+
 export default class ProdutoController {
   constructor(private readonly produtoService: ProdutoService) { }
   async adicionaImagens(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const body = req.body;
+
+      if (!body?.imagens || !Array.isArray(body.imagens)) {
+        throw new AdicionaImagensError('Formato de requisição inválido para imagens');
+      }
 
       const imagens = body?.imagens.map((imagem: ImagemProduto) => {
         return { ...imagem, produtoId: id }
@@ -19,6 +25,12 @@ export default class ProdutoController {
         message: imagensAdicionadas,
       });
     } catch (err: any) {
+      if (err instanceof AdicionaImagensError) {
+        return res.status(400).json({
+          status: 'error',
+          message: err.message,
+        });
+      }
       return res.status(500).json({
         status: "error",
         message: err,
